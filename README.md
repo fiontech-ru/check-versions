@@ -99,3 +99,21 @@ python3 check-php-nginx-versions.py
   но решение о миграции/изоляции принимается отдельно.
 - **Зависимости приложения** (composer/npm-пакеты) — это зона разработчика,
   не инфраструктуры.
+
+## Использование в CI
+Пример шага для GitHub Actions (падает, если найден PHP ниже 8.3.36):
+
+```yaml
+- name: Audit PHP/Nginx versions
+  run: |
+    ./check-php-nginx-versions.py --json > versions.json
+    python3 - <<'EOF'
+    import json, sys
+    data = json.load(open("versions.json"))
+    bad = [c for c in data["php"]["found"]
+           if "8.3." in c["version"] and int(c["version"].split("8.3.")[1].split()[0]) < 36]
+    if bad:
+        print("Уязвимые PHP:", bad)
+        sys.exit(1)
+    EOF
+```
